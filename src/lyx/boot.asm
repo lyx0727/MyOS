@@ -9,13 +9,12 @@
 
 ;================================================================================================
 %ifdef	_BOOT_DEBUG_
-BaseOfStack		equ	0100h	; 调试状态下堆栈基地址(栈底, 从这个位置向低地址生长)
+	BaseOfStack	equ	0100h	; 调试状态下堆栈基地址(栈底, 从这个位置向低地址生长)
 %else
-BaseOfStack		equ	07c00h	; Boot状态下堆栈基地址(栈底, 从这个位置向低地址生长)
+	BaseOfStack	equ	07c00h	; Boot状态下堆栈基地址(栈底, 从这个位置向低地址生长)
 %endif
 
-BaseOfLoader	equ	09000h	; LOADER.BIN 被加载到的位置 ----  段地址
-OffsetOfLoader	equ	0100h	; LOADER.BIN 被加载到的位置 ---- 偏移地址
+%include	"load.inc"
 ;================================================================================================
 
 	jmp short LABEL_START	; Start to boot.
@@ -252,7 +251,7 @@ GetFATEntry:
 	cmp	dx, 0
 	jz	LABEL_EVEN
 	mov	byte [bOdd], 1
-LABEL_EVEN:;偶数
+LABEL_EVEN:					;偶数
 	xor	dx, dx				; 现在 ax 中是 FATEntry 在 FAT 中的偏移量. 下面来计算 FATEntry 在哪个扇区中(FAT占用不止一个扇区)
 	mov	bx, [BPB_BytsPerSec]
 	div	bx					; dx:ax / BPB_BytsPerSec  ==>	ax <- 商   (FATEntry 所在的扇区相对于 FAT 来说的扇区号)
