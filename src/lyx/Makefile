@@ -5,9 +5,9 @@
 ASM			= nasm
 CC			= gcc
 LD			= ld
-ASMFLAGS	= -f elf
+ASMFLAGS	= 
 CFLAGS		= -m32 -c
-LDFLAGS		= -m elf_i386 -s
+LDFLAGS		= -m elf_i386 -Ttext 0x30400
 
 BOOT:=boot.asm
 LDR:=loader.asm
@@ -32,12 +32,12 @@ clean :
 	rm -f $(BOOT_BIN) $(LDR_BIN) $(KERNEL_BIN) *.o
 
 $(BOOT_BIN) : $(BOOT)
-	$(ASM) $< -o $@
+	$(ASM) $(ASMFLAGS) $< -o $@
 
 $(LDR_BIN) : $(LDR)
-	$(ASM) $< -o $@
+	$(ASM) $(ASMFLAGS) $< -o $@
 
 $(KERNEL_BIN) : $(KERNEL)
-	$(ASM) $(ASMFLAGS) -o $(subst .asm,.o,$(KERNEL)) $<
+	$(ASM) $(ASMFLAGS) -f elf -o $(subst .asm,.o,$(KERNEL)) $<
 	$(LD) $(LDFLAGS) -s -o $@ $(subst .asm,.o,$(KERNEL))
 

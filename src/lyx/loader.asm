@@ -7,25 +7,25 @@ org  0100h
 %include	"load.inc"
 %include	"pm.inc"
 
-; GDT
+; GDT --------------------------------------------------------------------------------------------------
 ;                            	段基址    	 段界限 				属性
 LABEL_GDT:	    	Descriptor 		0h,          0h, 							     0  ; 空描述符
 LABEL_DESC_FLAT_C:  Descriptor 		0h,     0fffffh, 	DA_CR  | DA_32   | DA_LIMIT_4K 	; 0-4G
 LABEL_DESC_FLAT_RW: Descriptor 		0h,     0fffffh, 	DA_DRW | DA_32   | DA_LIMIT_4K	; 0-4G
 LABEL_DESC_VIDEO:   Descriptor 0B8000h,		 0ffffh, 	DA_DRW | DA_DPL3 				; 显存首地址
+; GDT --------------------------------------------------------------------------------------------------
 
 GdtLen		equ					  $ - LABEL_GDT
 GdtPtr		dw						 GdtLen - 1		; 段界限
 			dd	BaseOfLoaderPhyAddr + LABEL_GDT		; 基地址
 
-; GDT 选择子
+; GDT 选择子 --------------------------------------------------------------------------------------------
 SelectorFlatC		equ	LABEL_DESC_FLAT_C	- LABEL_GDT
 SelectorFlatRW		equ	LABEL_DESC_FLAT_RW	- LABEL_GDT
 SelectorVideo		equ	LABEL_DESC_VIDEO	- LABEL_GDT + SA_RPL3
+; GDT 选择子 --------------------------------------------------------------------------------------------
 
 BaseOfStack			equ	  0100h
-PageDirBase			equ	100000h	; 页目录开始地址: 1M
-PageTblBase			equ	101000h	; 页表开始地址:   1M + 4K
 
 LABEL_START:					; <--- 从这里开始 *************
 	mov	ax, cs
@@ -357,10 +357,85 @@ LABEL_PM_START:
 	call	DispMemInfo
 	call	SetupPaging
 
-	mov	ah, 0Fh				; 0000: 黑底    1111: 白字
+	mov	ah, 0Fh							; 0000: 黑底    1111: 白字
 	mov	al, 'P'
 	mov	[gs:((80 * 0 + 39) * 2)], ax	; 屏幕第 0 行, 第 39 列
-	jmp	$
+
+	call	InitKernel
+
+	;jmp	$
+
+	;***************************************************************
+	jmp	SelectorFlatC:KernelEntryPointPhyAddr	; 正式进入内核 *
+	;***************************************************************
+	; 内存看上去是这样的：
+		;              ┃                                    ┃
+		;              ┃                 .                  ┃
+		;              ┃                 .                  ┃
+		;              ┃                 .                  ┃
+		;              ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+		;              ┃■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■┃
+		;              ┃■■■■■■■■■   Page  Tables    ■■■■■■■■┃
+		;              ┃■■■■■■■■■ (大小由LOADER决定) ■■■■■■■■┃
+		;    00101000h ┃■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■┃ PageTblBase
+		;              ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+		;              ┃■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■┃
+		;    00100000h ┃■■■■■■■ Page Directory Table ■■■■■■■┃ PageDirBase  <- 1M
+		;              ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+		;              ┃□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□┃
+		;       F0000h ┃□□□□□□□□□□□□ System ROM □□□□□□□□□□□□┃
+		;              ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+		;              ┃□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□┃
+		;       E0000h ┃□□□□□ Expansion of system ROM □□□□□□┃
+		;              ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+		;              ┃□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□┃
+		;       C0000h ┃□□□□ Reserved for ROM expansion □□□□┃
+		;              ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+		;              ┃□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□┃ B8000h ← gs
+		;       A0000h ┃□□□□□ Display adapter reserved □□□□□┃
+		;              ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+		;              ┃□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□┃
+		;       9FC00h ┃□□ extended BIOS data area (EBDA) □□┃
+		;              ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+		;              ┃■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■┃
+		;       90000h ┃■■■■■■■■■■■■■ LOADER.BIN ■■■■■■■■■■■┃ somewhere in LOADER ← esp
+		;              ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+		;              ┃■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■┃
+		;       80000h ┃■■■■■■■■■■■■ KERNEL.BIN ■■■■■■■■■■■■┃
+		;              ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+		;              ┃■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■┃
+		;       30000h ┃■■■■■■■■■■■■■ KERNEL ■■■■■■■■■■■■■■■┃ 30400h ← KERNEL 入口 (KernelEntryPointPhyAddr)
+		;              ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+		;              ┃                                    ┃
+		;        7E00h ┃              F  R  E  E            ┃
+		;              ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+		;              ┃■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■■┃
+		;        7C00h ┃■■■■■■■■■■■ BOOT  SECTOR ■■■■■■■■■■■┃
+		;              ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+		;              ┃                                    ┃
+		;         500h ┃              F  R  E  E            ┃
+		;              ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+		;              ┃□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□□┃
+		;         400h ┃□□□□□ ROM BIOS parameter area □□□□□□┃
+		;              ┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┫
+		;              ┃◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇◇┃
+		;           0h ┃◇◇◇◇◇◇◇ Int Vectors ◇◇◇◇◇◇┃
+		;              ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛ 0h	← cs, ds, es, fs, ss
+		;
+		;
+		;		┏━┓				┏━┓
+		;		┃■┃ 我们使用 	 ┃□┃ 不能使用的内存
+		;		┗━┛			    ┗━┛
+		;		┏━┓		       ┏━━┓
+		;		┃ ┃ 未使用空间 	┃◇┃ 可以覆盖的内存
+		;		┗━┛		       ┗━━┛
+		;
+		; 注：KERNEL 的位置实际上是很灵活的，可以通过同时改变 LOAD.INC 中的
+		;     KernelEntryPointPhyAddr 和 MAKEFILE 中参数 -Ttext 的值来改变。
+		;     比如把 KernelEntryPointPhyAddr 和 -Ttext 的值都改为 0x400400，
+		;     则 KERNEL 就会被加载到内存 0x400000(4M) 处，入口在 0x400400。
+		;
+
 
 %include	"lib.inc"
 ; 显示内存信息 --------------------------------------------------------------
@@ -460,6 +535,36 @@ SetupPaging:
 
 	ret
 ; 分页机制启动完毕 ----------------------------------------------------------
+
+; InitKernel ---------------------------------------------------------------------------------
+; 将 KERNEL.BIN 的内容经过整理对齐后放到新的位置
+; 遍历每一个 Program Header，根据 Program Header 中的信息来确定把什么放进内存，放到什么位置，以及放多少。
+; --------------------------------------------------------------------------------------------
+InitKernel:
+        xor   esi, esi
+        mov   cx, word [BaseOfKernelFilePhyAddr+2Ch]	;`. ecx <- pELFHdr->e_phnum
+        movzx ecx, cx                               	;/
+        mov   esi, [BaseOfKernelFilePhyAddr + 1Ch]  	; 	esi <- pELFHdr->e_phoff
+        add   esi, BaseOfKernelFilePhyAddr				; 	esi <- OffsetOfKernel+pELFHdr->e_phoff
+.Begin:
+        mov   eax, [esi + 0]
+        cmp   eax, 0                      	; PT_NULL
+        jz    .NoAction
+        push  dword [esi + 010h]    		; size	;`.
+        mov   eax, [esi + 04h]            			; |
+        add   eax, BaseOfKernelFilePhyAddr			; | memcpy((void*)(pPHdr->p_vaddr),
+        push  eax		    				; src	; |      uchCode + pPHdr->p_offset,
+        push  dword [esi + 08h]     		; dst  	; |      pPHdr->p_filesz;
+        call  MemCpy                      			; |
+        add   esp, 12                     			;/
+.NoAction:
+        add   esi, 020h                   	; esi += pELFHdr->e_phentsize
+        dec   ecx
+        jnz   .Begin
+
+        ret
+; InitKernel ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
 
 ; SECTION .data1 之开始 ---------------------------------------------------------------------------------------------
 [SECTION .data1]
