@@ -11,24 +11,24 @@ ENTRYPOINT	= 0x30400
 ENTRYOFFSET	= 0x400
 
 # Programs, flags, etc.
-ASM			= nasm
-DASM		= ndisasm
-CC			= gcc
-LD			= ld
-ASMBFLAGS	= -I boot/include/
-ASMKFLAGS	= -I include/ -f elf
-CFLAGS		= -I include/ -c -fno-builtin -m32
-LDFLAGS		= -s -Ttext $(ENTRYPOINT) -m elf_i386
-DASMFLAGS	= -u -o $(ENTRYPOINT) -e $(ENTRYOFFSET)
+ASM				= nasm
+DASM			= ndisasm
+CC				= gcc
+LD				= ld
+ASMBFLAGS		= -I boot/include/
+ASMKFLAGS		= -I include/ -f elf
+CFLAGS			= -I include/ -c -fno-builtin -m32 -fno-stack-protector
+LDFLAGS			= -s -Ttext $(ENTRYPOINT) -m elf_i386
+DASMFLAGS		= -u -o $(ENTRYPOINT) -e $(ENTRYOFFSET)
 
 # This Program
 ORANGESBOOT		= boot/boot.bin boot/loader.bin
 ORANGESKERNEL	= kernel.bin
-OBJS			= kernel/kernel.o kernel/start.o lib/kliba.o lib/string.o
+OBJS			= kernel/kernel.o kernel/start.o kernel/i8259.o kernel/global.o kernel/protect.o lib/klib.o lib/kliba.o lib/string.o
 DASMOUTPUT		= kernel.bin.asm
 
-FLOPPY = /mnt/hgfs/DOS/floppy
-IMG    = a.img 
+FLOPPY			= /mnt/hgfs/DOS/floppy
+IMG   			= a.img 
 
 # All Phony Targets
 .PHONY : everything final image clean realclean disasm all buildimg
@@ -72,7 +72,21 @@ $(ORANGESKERNEL) : $(OBJS)
 kernel/kernel.o : kernel/kernel.asm
 	$(ASM) $(ASMKFLAGS) -o $@ $<
 
-kernel/start.o : kernel/start.c include/type.h include/const.h include/protect.h
+kernel/start.o: kernel/start.c include/type.h include/const.h include/protect.h \
+		include/proto.h include/string.h
+	$(CC) $(CFLAGS) -o $@ $<
+
+kernel/i8259.o : kernel/i8259.c include/type.h include/const.h include/protect.h \
+			include/proto.h
+	$(CC) $(CFLAGS) -o $@ $<
+
+kernel/global.o : kernel/global.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+kernel/protect.o : kernel/protect.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+lib/klib.o : lib/klib.c
 	$(CC) $(CFLAGS) -o $@ $<
 
 lib/kliba.o : lib/kliba.asm
@@ -80,3 +94,4 @@ lib/kliba.o : lib/kliba.asm
 
 lib/string.o : lib/string.asm
 	$(ASM) $(ASMKFLAGS) -o $@ $<
+

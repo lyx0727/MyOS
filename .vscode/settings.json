@@ -1,5 +1,10 @@
 {
     "files.associations": {
-        "protect.h": "c"
-    }
+        "protect.h": "c",
+        "proto.h": "c",
+        "const.h": "c",
+        "type.h": "c",
+        "global.h": "c"
+    },
+    "C_Cpp.dimInactiveRegions": true
 }
