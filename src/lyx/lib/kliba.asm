@@ -23,7 +23,7 @@ disp_str:
 	lodsb
 	test	al, al
 	jz	.2
-	cmp	al, 0Ah	; 是回车吗?
+	cmp	al, 0Ah			; 是回车吗?
 	jnz	.3
 	push	eax
 	mov	eax, edi
@@ -61,7 +61,7 @@ disp_color_str:
 	lodsb
 	test	al, al
 	jz	.2
-	cmp	al, 0Ah	; 是回车吗?
+	cmp	al, 0Ah			; 是回车吗?
 	jnz	.3
 	push	eax
 	mov	eax, edi
@@ -92,7 +92,7 @@ out_byte:
 	mov	edx, [esp + 4]		; port
 	mov	al, [esp + 4 + 4]	; value
 	out	dx, al
-	nop	; 一点延迟
+	nop						; 一点延迟
 	nop
 	ret
 
@@ -103,7 +103,7 @@ in_byte:
 	mov	edx, [esp + 4]		; port
 	xor	eax, eax
 	in	al, dx
-	nop	; 一点延迟
+	nop						; 一点延迟
 	nop
 	ret
 

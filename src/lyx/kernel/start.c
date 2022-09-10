@@ -1,12 +1,10 @@
 #include "type.h"
 #include "const.h"
 #include "protect.h"
-#include "global.h"
 #include "proto.h"
-
-PUBLIC	void*	    memcpy(void* pDst, void* pSrc, int iSize);
-
-PUBLIC	void	    disp_str(char * pszInfo);
+#include "proc.h"
+#include "global.h"
+#include "string.h"
 
 PUBLIC void cstart(){
 
@@ -33,5 +31,5 @@ PUBLIC void cstart(){
 
 	init_prot();
 
-	disp_str("-----\"cstart\" ends-----\n");
+	disp_str("-----\"cstart\" finished-----\n");
 }

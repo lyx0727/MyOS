@@ -17,3 +17,5 @@ boot: a
 # disable the mouse
 mouse: enabled=0
 
+magic_break: enabled=1
+

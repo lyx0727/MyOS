@@ -1,7 +1,7 @@
 .history
 .vscode
 tools
-src/YuYuan
+src/YuYuan*
 *.pdf
 *.iso
 pics

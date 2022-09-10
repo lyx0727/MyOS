@@ -1,14 +1,26 @@
-SELECTOR_KERNEL_CS	equ	8
+%include "sconst.inc"
 
 ; 导入函数
 extern	cstart
 extern	exception_handler
 extern	spurious_irq
+extern	clock_handler
+extern 	kernel_main
+extern	disp_str
+extern	delay
 
 ; 导入全局变量
 extern	gdt_ptr
 extern	idt_ptr
+extern	p_proc_ready
+extern	tss
 extern	disp_pos
+extern	k_reenter
+
+bits 32
+
+[SECTION .data]
+clock_int_msg	db		"^", 0
 
 [SECTION .bss]
 StackSpace		resb	2 * 1024
@@ -17,6 +29,8 @@ StackTop:		; 栈顶
 [section .text]	; 代码在此
 
 global _start	; 导出 _start
+
+global restart
 
 global	divide_error
 global	single_step_exception
@@ -98,104 +112,157 @@ _start:									; 跳到这里来的时候，我们假设 gs 指向显存
 	mov	dword [disp_pos], 0
 
 	sgdt	[gdt_ptr]	; cstart() 中将会用到 gdt_ptr
+	
+	; xchg bx, bx
+	
 	call	cstart		; 在此函数中改变了gdt_ptr，让它指向新的GDT
 	lgdt	[gdt_ptr]	; 使用新的GDT
 
 	lidt	[idt_ptr]
+	
 
 	jmp	SELECTOR_KERNEL_CS:csinit
 csinit:					; “这个跳转指令强制使用刚刚初始化的结构”——<<OS:D&I 2nd>> P90.
+	xor	eax, eax
+	mov	ax, SELECTOR_TSS
+	ltr	ax
 
-	sti
-
+	; sti
+	jmp	kernel_main
 	; push	0
 	; popfd				; Pop top of stack into EFLAGS
 
-	hlt
+	; hlt
 
 
 ; 中断和异常 -- 硬件中断
 ; ---------------------------------
 %macro  hwint_master    1
-        push    %1
-        call    spurious_irq
-        add     esp, 4
-        hlt
+    push    %1
+    call    spurious_irq
+    add     esp, 4
+    hlt
 %endmacro
 ; ---------------------------------
 
 ALIGN   16
-hwint00:                ; Interrupt routine for irq 0 (the clock).
-        hwint_master    0
+hwint00:                	; Interrupt routine for irq 0 (the clock).
+    sub	esp, 4
+	pushad					; `.
+	push	ds				;  |
+	push	es				;  | 保存原寄存器值
+	push	fs				;  |
+	push	gs				; /
+	mov	dx, ss
+	mov	ds, dx
+	mov	es, dx
+
+	inc	byte [gs:0]			; 改变屏幕第0行，第0列字符
+
+	mov	al, EOI				; ┓	reenable master 8259
+	out	INT_M_CTL, al		; ┛
+
+	inc	dword [k_reenter]
+	cmp	dword [k_reenter], 0
+	jne	.re_enter
+
+	mov	esp, StackTop		; 切到内核栈
+
+	sti
+
+	push	0
+	call	clock_handler
+	add	esp, 4
+
+	; push	1
+	; call	delay
+	; add	esp, 4
+
+	cli
+
+	mov	esp, [p_proc_ready]	;离开内核栈
+	lldt	[esp + P_LDT_SEL]
+	lea	eax, [esp + P_STACKTOP]
+	mov	dword [tss + TSS3_S_SP0], eax
+.re_enter:
+	dec	dword [k_reenter]
+	pop	gs					; `.
+	pop	fs					;  |
+	pop	es					;  | 恢复原寄存器值
+	pop	ds					;  |
+	popad					; /
+	add	esp, 4
+
+	iretd
 
 ALIGN   16
 hwint01:                ; Interrupt routine for irq 1 (keyboard)
-        hwint_master    1
+    hwint_master    1
 
 ALIGN   16
 hwint02:                ; Interrupt routine for irq 2 (cascade!)
-        hwint_master    2
+    hwint_master    2
 
 ALIGN   16
 hwint03:                ; Interrupt routine for irq 3 (second serial)
-        hwint_master    3
+    hwint_master    3
 
 ALIGN   16
 hwint04:                ; Interrupt routine for irq 4 (first serial)
-        hwint_master    4
+    hwint_master    4
 
 ALIGN   16
 hwint05:                ; Interrupt routine for irq 5 (XT winchester)
-        hwint_master    5
+    hwint_master    5
 
 ALIGN   16
 hwint06:                ; Interrupt routine for irq 6 (floppy)
-        hwint_master    6
+    hwint_master    6
 
 ALIGN   16
 hwint07:                ; Interrupt routine for irq 7 (printer)
-        hwint_master    7
+    hwint_master    7
 
 ; ---------------------------------
 %macro  hwint_slave     1
-        push    %1
-        call    spurious_irq
-        add     esp, 4
-        hlt
+    push    %1
+    call    spurious_irq
+    add     esp, 4
+    hlt
 %endmacro
 ; ---------------------------------
 
 ALIGN   16
 hwint08:                ; Interrupt routine for irq 8 (realtime clock).
-        hwint_slave     8
+    hwint_slave     8
 
 ALIGN   16
 hwint09:                ; Interrupt routine for irq 9 (irq 2 redirected)
-        hwint_slave     9
+    hwint_slave     9
 
 ALIGN   16
 hwint10:                ; Interrupt routine for irq 10
-        hwint_slave     10
+    hwint_slave     10
 
 ALIGN   16
 hwint11:                ; Interrupt routine for irq 11
-        hwint_slave     11
+    hwint_slave     11
 
 ALIGN   16
 hwint12:                ; Interrupt routine for irq 12
-        hwint_slave     12
+    hwint_slave     12
 
 ALIGN   16
 hwint13:                ; Interrupt routine for irq 13 (FPU exception)
-        hwint_slave     13
+    hwint_slave     13
 
 ALIGN   16
 hwint14:                ; Interrupt routine for irq 14 (AT winchester)
-        hwint_slave     14
+    hwint_slave     14
 
 ALIGN   16
 hwint15:                ; Interrupt routine for irq 15
-        hwint_slave     15
+    hwint_slave     15
 
 ; 中断和异常 -- 异常
 divide_error:
@@ -261,4 +328,22 @@ exception:
 	call	exception_handler
 	add	esp, 4 * 2		; 让栈顶指向 EIP，堆栈中从顶向下依次是：EIP、CS、EFLAGS
 	hlt
+
+; ====================================================================================
+;                                   restart
+; ====================================================================================
+restart:
+	mov	esp, [p_proc_ready]
+	lldt	[esp + P_LDT_SEL] 
+	lea	eax, [esp + P_STACKTOP]
+	mov	dword [tss + TSS3_S_SP0], eax
+restart_reenter:
+	; dec	dword [k_reenter]
+	pop	gs
+	pop fs
+	pop es
+	pop ds
+	popad
+	add esp, 4
+	iretd
 
