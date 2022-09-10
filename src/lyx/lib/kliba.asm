@@ -14,6 +14,9 @@ global	in_byte
 ; ========================================================================
 disp_str:
 	push	ebp
+	push	esi
+	push	eax
+	push	edi
 	mov	ebp, esp
 
 	mov	esi, [ebp + 8]	; pszInfo
@@ -44,6 +47,9 @@ disp_str:
 .2:
 	mov	[disp_pos], edi
 
+	pop	edi
+	pop	esi
+	pop	eax
 	pop	ebp
 	ret
 
