@@ -58,5 +58,6 @@ typedef struct {
 ---  
 
 ## Chapter6
+![](https://s1.328888.xyz/2022/09/11/KmLpj.png)
 - disp_str函数中没有保存寄存器eax、ebx、esi、edi，可能导致显示异常和程序异常
 ---

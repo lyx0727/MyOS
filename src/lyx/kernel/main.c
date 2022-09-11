@@ -46,6 +46,7 @@ PUBLIC int kernel_main(){
     
     
     k_reenter = 0;
+    ticks = 0;
     
     p_proc_ready        = proc_table;
     
@@ -64,7 +65,7 @@ void TestA(){
 	int i = 0;
 	while(1){
 		disp_str("A");
-		disp_int(i++);
+        disp_int(get_ticks());
 		disp_str(".");
 		delay(1);
 	}
