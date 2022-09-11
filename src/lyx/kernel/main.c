@@ -18,7 +18,7 @@ PUBLIC int kernel_main(){
     u16         selector_ldt    = SELECTOR_LDT_FIRST; 
 
     int i;
-    for(i = 0; i < NR_TASKS; i++){
+    for (i = 0; i < NR_TASKS; i++){
         strcpy(p_proc->p_name, p_task->name);
         p_proc->pid = i;
         p_proc->ldt_sel = selector_ldt;
@@ -45,9 +45,13 @@ PUBLIC int kernel_main(){
     }
     
     
-    k_reenter = -1;
+    k_reenter = 0;
     
     p_proc_ready        = proc_table;
+    
+    put_irq_handler(CLOCK_IRQ, clock_handler);  /* 设定时钟中断处理程序 */
+    enable_irq(CLOCK_IRQ);                      /* 让8259A可以接收时钟中断 */
+
     restart();
 
     while(1){}
