@@ -15,7 +15,7 @@ void restart();
 
 /* klib.c */
 PUBLIC void disp_int(int input);
-PUBLIC void	delay(int time);
+PUBLIC void delay(int time);
 
 /* main.c */
 void TestA();
@@ -29,10 +29,12 @@ PUBLIC void spurious_irq(int irq);
 
 /* clock.c */
 PUBLIC void clock_handler(int irq);
+PUBLIC void	milli_delay(int milli_sec);
 
 /* proc.c */
-PUBLIC  int     sys_get_ticks();        /* sys_call */
+PUBLIC int sys_get_ticks();        /* sys_call */
+PUBLIC void schedule();
 
 /* syscall.asm */
-PUBLIC  void    sys_call();             /* int_handler */
-PUBLIC  int     get_ticks();
+PUBLIC void sys_call();             /* int_handler */
+PUBLIC int  get_ticks();

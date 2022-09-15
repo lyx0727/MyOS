@@ -44,20 +44,28 @@ PUBLIC int kernel_main(){
         selector_ldt += 1 << 3;
     }
     
+    proc_table[0].ticks = proc_table[0].priority = 15;
+	proc_table[1].ticks = proc_table[1].priority =  5;
+	proc_table[2].ticks = proc_table[2].priority =  3;
     
     k_reenter = 0;
     ticks = 0;
     
     p_proc_ready        = proc_table;
-    
-    put_irq_handler(CLOCK_IRQ, clock_handler);  /* 设定时钟中断处理程序 */
-    enable_irq(CLOCK_IRQ);                      /* 让8259A可以接收时钟中断 */
 
     /* 初始化 8253 PIT */
     out_byte(TIMER_MODE, RATE_GENERATOR);
-    out_byte(TIMER0, (u8) (TIMER_FREQ/HZ) );
-    out_byte(TIMER0, (u8) ((TIMER_FREQ/HZ) >> 8));
+    out_byte(TIMER0, (u8) (TIMER_FREQ / HZ) );
+    out_byte(TIMER0, (u8) ((TIMER_FREQ / HZ) >> 8));
 
+    put_irq_handler(CLOCK_IRQ, clock_handler);  /* 设定时钟中断处理程序 */
+    enable_irq(CLOCK_IRQ);                      /* 让8259A可以接收时钟中断 */
+
+    disp_pos = 0;
+	for (i = 0; i < 80 * 25; i++) {
+		disp_str(" ");
+	}
+	disp_pos = 0;
 
     restart();
 
@@ -70,10 +78,8 @@ PUBLIC int kernel_main(){
 void TestA(){
 	int i = 0;
 	while(1){
-		disp_str("A");
-        disp_int(get_ticks());
-		disp_str(".");
-		delay(1);
+		disp_color_str("A.", BRIGHT | MAKE_COLOR(BLACK, RED));
+		milli_delay(10);
 	}
 }
 
@@ -81,24 +87,20 @@ void TestA(){
                                TestB
  *======================================================================*/
 void TestB(){
-	int i = 0;
-	while(1){
-		disp_str("B");
-		disp_int(i++);
-		disp_str(".");
-		delay(1);
-	}
+	int i = 0x1000;
+    while(1){
+	    disp_color_str("B.", BRIGHT | MAKE_COLOR(BLACK, RED));
+		milli_delay(10);
+    }
 }
 
 /*======================================================================*
                                TestC
  *======================================================================*/
 void TestC(){
-	int i = 0;
+	int i = 0x2000;
 	while(1){
-		disp_str("C");
-		disp_int(i++);
-		disp_str(".");
-		delay(1);
-	}
+        disp_color_str("C.", BRIGHT | MAKE_COLOR(BLACK, RED));
+		milli_delay(10);
+    }
 }
