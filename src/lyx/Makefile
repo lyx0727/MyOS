@@ -24,8 +24,8 @@ DASMFLAGS		= -u -o $(ENTRYPOINT) -e $(ENTRYOFFSET)
 # This Program
 ORANGESBOOT		= boot/boot.bin boot/loader.bin
 ORANGESKERNEL	= kernel.bin
-OBJS			= kernel/kernel.o kernel/syscall.o kernel/start.o kernel/main.o kernel/clock.o\
-				kernel/i8259.o kernel/global.o kernel/protect.o kernel/proc.o\
+OBJS			= kernel/kernel.o kernel/syscall.o kernel/start.o kernel/main.o kernel/clock.o kernel/keyboard.o\
+				kernel/tty.o kernel/i8259.o kernel/global.o kernel/protect.o kernel/proc.o\
 				lib/kliba.o lib/klib.o lib/string.o
 DASMOUTPUT		= kernel.bin.asm
 HEADER			= include/type.h include/const.h include/protect.h include/proto.h include/proc.h
@@ -85,6 +85,12 @@ kernel/main.o: kernel/main.c include/type.h include/const.h include/protect.h in
 	$(CC) $(CFLAGS) -o $@ $<
 
 kernel/clock.o: kernel/clock.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+kernel/keyboard.o: kernel/keyboard.c
+	$(CC) $(CFLAGS) -o $@ $<
+
+kernel/tty.o: kernel/tty.c
 	$(CC) $(CFLAGS) -o $@ $<
 
 kernel/i8259.o: kernel/i8259.c include/type.h include/const.h include/protect.h include/proto.h

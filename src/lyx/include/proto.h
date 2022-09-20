@@ -5,6 +5,8 @@ PUBLIC void	disp_str(char * info);
 PUBLIC void	disp_color_str(char * info, int color);
 PUBLIC void enable_irq(int irq);
 PUBLIC void disable_irq(int irq);
+PUBLIC void disable_int();
+PUBLIC void enable_int();
 
 /* protect.c */
 PUBLIC void	init_prot();
@@ -30,6 +32,12 @@ PUBLIC void spurious_irq(int irq);
 /* clock.c */
 PUBLIC void clock_handler(int irq);
 PUBLIC void	milli_delay(int milli_sec);
+PUBLIC void init_clock();
+
+/* keyboard.c */
+PUBLIC void keyboard_handler(int irq);
+PUBLIC void init_keyboard();
+PUBLIC void keyboard_read();
 
 /* proc.c */
 PUBLIC int sys_get_ticks();        /* sys_call */
@@ -38,3 +46,7 @@ PUBLIC void schedule();
 /* syscall.asm */
 PUBLIC void sys_call();             /* int_handler */
 PUBLIC int  get_ticks();
+
+/* tty.c */
+PUBLIC void task_tty();
+PUBLIC void in_process(u32 key);
