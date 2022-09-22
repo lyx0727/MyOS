@@ -15,6 +15,7 @@
 PRIVATE void init_tty(TTY* p_tty);
 PRIVATE void tty_do_read(TTY* p_tty);
 PRIVATE void tty_do_write(TTY* p_tty);
+PRIVATE void put_key(TTY* p_tty, u32 key);
 
 /*======================================================================*
                     task_tty
@@ -61,6 +62,12 @@ PUBLIC void in_process(TTY* p_tty, u32 key){
     else {
         int raw_code = key & MASK_RAW;
         switch(raw_code) {
+            case ENTER:
+			    put_key(p_tty, '\n');
+			    break;
+            case BACKSPACE:
+			    put_key(p_tty, '\b');
+			    break;
             case UP:
                 if ((key & FLAG_SHIFT_L) || (key & FLAG_SHIFT_R)) {
                     scroll_screen(p_tty->p_console, SCR_DN);
@@ -92,6 +99,20 @@ PUBLIC void in_process(TTY* p_tty, u32 key){
                 break;
         }
     }
+}
+
+/*======================================================================*
+			      put_key
+*======================================================================*/
+PRIVATE void put_key(TTY* p_tty, u32 key){
+	if (p_tty->inbuf_count < TTY_IN_BYTES) {
+		*(p_tty->p_inbuf_head) = key;
+		p_tty->p_inbuf_head++;
+		if (p_tty->p_inbuf_head == p_tty->in_buf + TTY_IN_BYTES) {
+			p_tty->p_inbuf_head = p_tty->in_buf;
+		}
+		p_tty->inbuf_count++;
+	}
 }
 
 /*======================================================================*

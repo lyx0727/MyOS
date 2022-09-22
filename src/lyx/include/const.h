@@ -66,6 +66,8 @@
 								 * Read : Read Status Register
 								 * Write: Write Input Buffer(8042 Command) 
 								*/
+#define LED_CODE		0xED
+#define KB_ACK			0xFA
 
 /* VGA */
 #define	CRTC_ADDR_REG	0x3D4	/* CRT Controller Registers - Addr Register */
