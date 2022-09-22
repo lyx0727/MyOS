@@ -19,7 +19,6 @@ typedef struct s_stackframe {
 	u32	ss;			/* /                                    */
 } STACK_FRAME;
 
-
 typedef struct s_proc {
 	STACK_FRAME regs;          	/* process registers saved in stack frame */
 
@@ -40,7 +39,8 @@ typedef struct s_task {
 } TASK;
 
 /* Number of tasks */
-#define NR_TASKS	4
+#define NR_TASKS	1
+#define NR_PROCS	3
 
 /* stacks of tasks */
 #define STACK_SIZE_TTY		0x8000

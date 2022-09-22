@@ -264,17 +264,17 @@ PUBLIC void keyboard_read(TTY* p_tty){
 			    get_byte_from_kbuf
  *======================================================================*/
 PRIVATE u8 get_byte_from_kbuf(){      /* 从键盘缓冲区中读取下一个字节 */
-        u8 scan_code;
-        while (kb_in.count <= 0) {}   /* 等待下一个字节到来 */
-        disable_int();
-        scan_code = *(kb_in.p_tail);
-        kb_in.p_tail++;
-        if (kb_in.p_tail == kb_in.buf + KB_IN_BYTES) {
-            kb_in.p_tail = kb_in.buf;
-        }
-        kb_in.count--;
-        enable_int();
-        return scan_code;
+    u8 scan_code;
+    while (kb_in.count <= 0) {}   /* 等待下一个字节到来 */
+    disable_int();
+    scan_code = *(kb_in.p_tail);
+    kb_in.p_tail++;
+    if (kb_in.p_tail == kb_in.buf + KB_IN_BYTES) {
+        kb_in.p_tail = kb_in.buf;
+    }
+    kb_in.count--;
+    enable_int();
+    return scan_code;
 }
 
 /*======================================================================*

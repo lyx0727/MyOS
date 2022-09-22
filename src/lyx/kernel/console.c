@@ -150,7 +150,6 @@ PUBLIC void scroll_screen(CONSOLE* p_con, int direction){
 	}
 	else{
 	}
-
 	set_video_start_addr(p_con->current_start_addr);
 	set_cursor(p_con->cursor);
 }

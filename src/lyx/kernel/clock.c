@@ -22,7 +22,6 @@ PUBLIC  void clock_handler(int irq){
     if(p_proc_ready->ticks > 0){
         return;
     }
-    
     schedule();
 }
 
