@@ -1,10 +1,12 @@
 #include "type.h"
 #include "const.h"
 #include "protect.h"
-#include "proto.h"
 #include "proc.h"
-#include "global.h"
 #include "string.h"
+#include "tty.h"
+#include "console.h"
+#include "proto.h"
+#include "global.h"
 
 /* 本文件内函数声明 */
 PRIVATE void init_idt_desc(unsigned char vector, u8 desc_type, int_handler handler, unsigned char privilege);

@@ -1,12 +1,14 @@
 #include "type.h"
 #include "const.h"
 #include "protect.h"
-#include "proto.h"
 #include "string.h"
 #include "proc.h"
-#include "global.h"
 #include "keyboard.h"
 #include "keymap.h"
+#include "tty.h"
+#include "console.h"
+#include "proto.h"
+#include "global.h"
 
 PRIVATE KB_INPUT    kb_in;
 
@@ -56,7 +58,7 @@ PUBLIC void init_keyboard(){
 /*======================================================================*
                            keyboard_read
  *======================================================================*/
-PUBLIC void keyboard_read(){
+PUBLIC void keyboard_read(TTY* p_tty){
 	u8	    scan_code;
 	char	output[2];
 	int	    make;	    /* 1: make;  0: break. */
@@ -151,7 +153,7 @@ PUBLIC void keyboard_read(){
 				key |= ctrl_r	? FLAG_CTRL_R	: 0;
 				key |= alt_l	? FLAG_ALT_L	: 0;
 				key |= alt_r	? FLAG_ALT_R	: 0;
-				in_process(key);
+				in_process(p_tty, key);
 			}
 		}
 	}
@@ -162,9 +164,7 @@ PUBLIC void keyboard_read(){
  *======================================================================*/
 PRIVATE u8 get_byte_from_kbuf(){      /* 从键盘缓冲区中读取下一个字节 */
         u8 scan_code;
-
         while (kb_in.count <= 0) {}   /* 等待下一个字节到来 */
-
         disable_int();
         scan_code = *(kb_in.p_tail);
         kb_in.p_tail++;
@@ -173,6 +173,5 @@ PRIVATE u8 get_byte_from_kbuf(){      /* 从键盘缓冲区中读取下一个字
         }
         kb_in.count--;
         enable_int();
-
         return scan_code;
 }
